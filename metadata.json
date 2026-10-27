@@ -1,0 +1,6 @@
+{
+  "name": "TaskEasy",
+  "description": "Personal Task Manager to plan, focus, and complete daily tasks.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
