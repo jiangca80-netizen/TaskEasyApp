@@ -16,22 +16,35 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Set up Gradle
+      - name: Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
 
-      - name: Create Upload Keystore
+      - name: Create Keystores
         run: |
+          # 1. Create upload key for release AAB (Google Play)
           keytool -genkeypair -v -keystore my-upload-key.jks \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -alias upload -storepass MySecretPass123! -keypass MySecretPass123! \
             -dname "CN=TaskEasy, OU=Dev, O=TaskEasy, L=City, S=State, C=US"
 
-      - name: Build AAB and APK
+          # 2. Create debug keystore for APK
+          keytool -genkeypair -v -keystore debug.keystore \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias androiddebugkey -storepass android -keypass android \
+            -dname "CN=Android Debug, O=Android, C=US"
+
+      - name: Build AAB Bundle (Play Store)
         env:
           STORE_PASSWORD: "MySecretPass123!"
           KEY_PASSWORD: "MySecretPass123!"
         run: |
-          gradle :app:bundleRelease :app:assembleDebug
+          gradle :app:bundleRelease
+
+      - name: Build APK (Direct Install)
+        run: |
+          gradle :app:assembleDebug
 
       - name: Upload AAB (Play Store)
         uses: actions/upload-artifact@v4
