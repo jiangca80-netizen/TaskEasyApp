@@ -11,6 +11,8 @@ import com.example.data.model.TaskItem
 import com.example.data.model.TaskStatus
 import com.example.data.repository.TaskRepository
 import com.example.ui.theme.AppThemeMode
+import com.example.util.TaskPdfExporter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -116,7 +118,7 @@ class TaskFlowViewModel(application: Application) : AndroidViewModel(application
   val showFilterSheet: StateFlow<Boolean> = _showFilterSheet.asStateFlow()
 
   // Calendar State
-  private val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+  private val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.US)
   private val _calendarSelectedDate = MutableStateFlow(sdfDate.format(Date()))
   val calendarSelectedDate: StateFlow<String> = _calendarSelectedDate.asStateFlow()
 
@@ -408,8 +410,18 @@ class TaskFlowViewModel(application: Application) : AndroidViewModel(application
     setThemeMode(nextMode)
   }
 
+  // --- PDF Export ---
+
+  suspend fun writePdfReport(outputStream: java.io.OutputStream) {
+    kotlinx.coroutines.withContext(Dispatchers.IO) {
+      val database = TaskDatabase.getDatabase(getApplication())
+      val tasks = database.taskDao().getAllTasksSync().map { it.toTaskItem() }
+      TaskPdfExporter.exportToPdf(tasks = tasks, outputStream = outputStream)
+    }
+  }
+
   suspend fun exportDataJson(): String {
-    return repository.exportToJson(allTasks.value)
+    return repository.exportAllTasksToJson()
   }
 
   fun importDataJson(jsonStr: String, onSuccess: (Int) -> Unit, onError: (String) -> Unit) {

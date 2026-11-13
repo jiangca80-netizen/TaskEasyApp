@@ -2,7 +2,6 @@ package com.example.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,8 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -183,7 +182,7 @@ fun TaskActionBottomSheet(
       // 1. Move to To Do / Start Task
       if (task.status == TaskStatus.IN_PROGRESS) {
         ActionSquareRowItem(
-          icon = Icons.Default.ArrowBack,
+          icon = Icons.AutoMirrored.Filled.ArrowBack,
           iconBg = PrimaryBlue,
           title = "Move to To Do",
           subtitle = "Send this task back to To Do list",
@@ -195,7 +194,7 @@ fun TaskActionBottomSheet(
         )
       } else if (task.status == TaskStatus.TODO) {
         ActionSquareRowItem(
-          icon = Icons.Default.ArrowForward,
+          icon = Icons.AutoMirrored.Filled.ArrowForward,
           iconBg = PrimaryBlue,
           title = "Start Task",
           subtitle = "Move to In Progress list and start work",

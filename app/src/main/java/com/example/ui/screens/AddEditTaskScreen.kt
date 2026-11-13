@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GridView
@@ -55,6 +56,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Priority
@@ -63,6 +65,7 @@ import com.example.data.model.TaskItem
 import com.example.ui.components.formatDateDisplay
 import com.example.ui.theme.BorderDark
 import com.example.ui.theme.BorderLight
+import com.example.ui.theme.CompletedGreen
 import com.example.ui.theme.DarkNavyText
 import com.example.ui.theme.LocalIsDarkTheme
 import com.example.ui.theme.PrimaryBlue
@@ -117,7 +120,7 @@ fun AddEditTaskScreen(
     Pair("Others", Icons.Default.GridView)
   )
 
-  val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+  val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
   fun showDatePicker() {
     val cal = Calendar.getInstance()
@@ -407,31 +410,99 @@ fun AddEditTaskScreen(
 
       Spacer(modifier = Modifier.height(18.dp))
 
-      // Subtasks
-      Text(
-        text = "Subtasks (optional)",
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 14.sp,
-        color = if (isDark) TextDarkPrimary else DarkNavyText
-      )
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Text(
+          text = if (subtasks.isNotEmpty()) {
+            val doneCount = subtasks.count { it.isCompleted }
+            "Subtasks ($doneCount/${subtasks.size})"
+          } else {
+            "Subtasks (optional)"
+          },
+          fontWeight = FontWeight.SemiBold,
+          fontSize = 14.sp,
+          color = if (isDark) TextDarkPrimary else DarkNavyText
+        )
+        if (subtasks.isNotEmpty()) {
+          Text(
+            text = "Tap to tick or pen through",
+            fontSize = 11.5.sp,
+            color = SlateGray
+          )
+        }
+      }
       Spacer(modifier = Modifier.height(8.dp))
 
       subtasks.forEachIndexed { index, subtask ->
+        val isDone = subtask.isCompleted
+        val rowBg = if (isDone) {
+          if (isDark) Color(0xFF132A1C) else Color(0xFFF0FDF4)
+        } else {
+          if (isDark) Color(0xFF1E2D47).copy(alpha = 0.5f) else Color(0xFFF8FAFC)
+        }
+        val rowBorder = if (isDone) {
+          if (isDark) Color(0xFF166534) else Color(0xFFBBF7D0)
+        } else {
+          if (isDark) BorderDark else BorderLight
+        }
+
         Row(
           modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 3.dp),
+            .clip(RoundedCornerShape(10.dp))
+            .background(rowBg)
+            .border(1.dp, rowBorder, RoundedCornerShape(10.dp))
+            .clickable {
+              subtasks[index] = subtask.copy(isCompleted = !subtask.isCompleted)
+            }
+            .padding(horizontal = 10.dp, vertical = 7.dp),
           verticalAlignment = Alignment.CenterVertically
         ) {
+          // Circular tick box
+          Box(
+            modifier = Modifier
+              .size(22.dp)
+              .clip(CircleShape)
+              .background(if (isDone) CompletedGreen else Color.Transparent)
+              .border(
+                1.5.dp,
+                if (isDone) CompletedGreen else SlateGray.copy(alpha = 0.6f),
+                CircleShape
+              ),
+            contentAlignment = Alignment.Center
+          ) {
+            if (isDone) {
+              Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Completed",
+                tint = Color.White,
+                modifier = Modifier.size(14.dp)
+              )
+            }
+          }
+
+          Spacer(modifier = Modifier.width(10.dp))
+
+          // Subtask text with pen-through (strikethrough)
           Text(
-            text = "• ${subtask.text}",
+            text = subtask.text,
             fontSize = 14.sp,
-            color = if (isDark) TextDarkPrimary else DarkNavyText,
+            textDecoration = if (isDone) TextDecoration.LineThrough else TextDecoration.None,
+            fontWeight = if (isDone) FontWeight.Normal else FontWeight.Medium,
+            color = if (isDone) {
+              if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+            } else {
+              if (isDark) TextDarkPrimary else DarkNavyText
+            },
             modifier = Modifier.weight(1f)
           )
+
           IconButton(
             onClick = { subtasks.removeAt(index) },
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(26.dp)
           ) {
             Icon(
               imageVector = Icons.Default.Close,
@@ -441,6 +512,7 @@ fun AddEditTaskScreen(
             )
           }
         }
+        Spacer(modifier = Modifier.height(6.dp))
       }
 
       Row(

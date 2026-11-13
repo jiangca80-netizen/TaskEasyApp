@@ -94,7 +94,7 @@ fun TasksScreen(
   val inProgressCount = tasks.count { it.status == TaskStatus.IN_PROGRESS }
   val completedCount = tasks.count { it.status == TaskStatus.COMPLETED }
 
-  val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+  val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
   val filteredTasks = tasks.filter { task ->
     task.status == selectedTab &&

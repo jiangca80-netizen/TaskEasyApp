@@ -66,19 +66,21 @@ val DashMintBg = Color(0xFFEAF8F0)
 val DashLavenderBg = Color(0xFFF3E8FF)
 val DashLavenderPurple = Color(0xFF8B5CF6)
 
-// Card Shades per Status
-val TodoCardBgLight = Color(0xFFEDF5FF)
-val TodoCardBorderLight = Color(0xFFD4E7FF)
-val TodoCardBgDark = Color(0xFF152238)
-val TodoCardBorderDark = Color(0xFF233B60)
+// Card Shades per Status (Deeper, richer tints for clear visual separation)
+val TodoCardBgLight = Color(0xFFD9E9FF)
+val TodoCardBorderLight = Color(0xFFA3C8FF)
+val TodoCardBgDark = Color(0xFF12284B)
+val TodoCardBorderDark = Color(0xFF2B589B)
 
-val InProgressCardBgLight = Color(0xFFFFF6E8)
-val InProgressCardBorderLight = Color(0xFFFFE0B8)
-val InProgressCardBgDark = Color(0xFF2C1F14)
-val InProgressCardBorderDark = Color(0xFF4C3622)
+val InProgressCardBgLight = Color(0xFFFFE7C9)
+val InProgressCardBorderLight = Color(0xFFFFC178)
+val InProgressCardBgDark = Color(0xFF3A2310)
+val InProgressCardBorderDark = Color(0xFF7A4A1D)
 
-val CompletedCardBgLight = Color(0xFFEAF8F0)
-val CompletedCardBorderLight = Color(0xFFC7EFD8)
-val CompletedCardBgDark = Color(0xFF12261C)
-val CompletedCardBorderDark = Color(0xFF1E4834)
+val CompletedCardBgLight = Color(0xFFCFF2DF)
+val CompletedCardBorderLight = Color(0xFF8CDAB1)
+val CompletedCardBgDark = Color(0xFF0E3021)
+val CompletedCardBorderDark = Color(0xFF1F6648)
+
+
 

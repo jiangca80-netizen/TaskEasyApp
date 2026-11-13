@@ -198,12 +198,11 @@ fun TaskEasyApp(viewModel: TaskFlowViewModel = viewModel()) {
               AppScreen.SETTINGS -> {
                 SettingsScreen(
                   themeMode = themeMode,
+                  taskCount = tasks.size,
                   onThemeChange = { mode -> viewModel.setThemeMode(mode) },
-                  onExportData = { viewModel.exportDataJson() },
-                  onImportData = { json, onSuccess, onError ->
-                    viewModel.importDataJson(json, onSuccess, onError)
-                  },
+                  onExportPdfToStream = { stream -> viewModel.writePdfReport(stream) },
                   onClearAllData = { viewModel.clearAllData() },
+                  onShowMessage = { msg -> viewModel.showToast(msg) },
                   onBack = { viewModel.navigateBack() }
                 )
               }

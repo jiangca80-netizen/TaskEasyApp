@@ -5,7 +5,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,11 +17,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -62,8 +63,10 @@ import com.example.ui.components.TaskStopwatchBadge
 import com.example.ui.components.formatDateDisplay
 import com.example.ui.theme.BorderDark
 import com.example.ui.theme.BorderLight
+import com.example.ui.theme.CompletedGreen
 import com.example.ui.theme.DarkNavyText
 import com.example.ui.theme.InProgressOrange
+import com.example.ui.theme.LocalIsDarkTheme
 import com.example.ui.theme.PrimaryBlue
 import com.example.ui.theme.PrimaryBlueBorder
 import com.example.ui.theme.PrimaryBlueLightBg
@@ -93,7 +96,7 @@ fun TaskDetailsScreen(
 ) {
   BackHandler { onBack() }
 
-  val isDark = isSystemInDarkTheme()
+  val isDark = LocalIsDarkTheme.current
   var newSubtaskText by remember { mutableStateOf("") }
   var showAddSubtaskField by remember { mutableStateOf(false) }
 
@@ -109,7 +112,7 @@ fun TaskDetailsScreen(
     return
   }
 
-  val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+  val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
   val isDueToday = task.dueDate == todayStr
   val isOverdue = task.dueDate != null && task.dueDate < todayStr && task.status != TaskStatus.COMPLETED
 
@@ -257,7 +260,7 @@ fun TaskDetailsScreen(
                     task.dueDate < todayStr && task.status != TaskStatus.COMPLETED -> "(Overdue)"
                     else -> {
                       try {
-                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
                         val d = sdf.parse(task.dueDate)
                         val t = sdf.parse(todayStr)
                         if (d != null && t != null) {
@@ -467,27 +470,67 @@ fun TaskDetailsScreen(
         }
       } else {
         task.subtasks.forEach { subtask ->
+          val isDone = subtask.isCompleted
+          val rowBg = if (isDone) {
+            if (isDark) Color(0xFF132A1C) else Color(0xFFF0FDF4)
+          } else {
+            if (isDark) Color(0xFF1E2D47).copy(alpha = 0.5f) else Color(0xFFF8FAFC)
+          }
+          val rowBorder = if (isDone) {
+            if (isDark) Color(0xFF166534) else Color(0xFFBBF7D0)
+          } else {
+            if (isDark) BorderDark else BorderLight
+          }
+
           Row(
             modifier = Modifier
               .fillMaxWidth()
-              .clip(RoundedCornerShape(8.dp))
+              .clip(RoundedCornerShape(10.dp))
+              .background(rowBg)
+              .border(1.dp, rowBorder, RoundedCornerShape(10.dp))
               .clickable { onToggleSubtask(task, subtask.id) }
-              .padding(vertical = 4.dp),
+              .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
-            Checkbox(
-              checked = subtask.isCompleted,
-              onCheckedChange = { onToggleSubtask(task, subtask.id) },
-              colors = CheckboxDefaults.colors(checkedColor = PrimaryBlue)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
+            // Circular tick box
+            Box(
+              modifier = Modifier
+                .size(22.dp)
+                .clip(CircleShape)
+                .background(if (isDone) CompletedGreen else Color.Transparent)
+                .border(
+                  1.5.dp,
+                  if (isDone) CompletedGreen else SlateGray.copy(alpha = 0.6f),
+                  CircleShape
+                ),
+              contentAlignment = Alignment.Center
+            ) {
+              if (isDone) {
+                Icon(
+                  imageVector = Icons.Default.Check,
+                  contentDescription = "Completed",
+                  tint = Color.White,
+                  modifier = Modifier.size(14.dp)
+                )
+              }
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
             Text(
               text = subtask.text,
               fontSize = 14.sp,
-              textDecoration = if (subtask.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-              color = if (subtask.isCompleted) SlateGray else if (isDark) TextDarkPrimary else DarkNavyText
+              textDecoration = if (isDone) TextDecoration.LineThrough else TextDecoration.None,
+              fontWeight = if (isDone) FontWeight.Normal else FontWeight.Medium,
+              color = if (isDone) {
+                if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+              } else {
+                if (isDark) TextDarkPrimary else DarkNavyText
+              },
+              modifier = Modifier.weight(1f)
             )
           }
+          Spacer(modifier = Modifier.height(6.dp))
         }
       }
 

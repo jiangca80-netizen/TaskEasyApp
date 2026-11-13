@@ -1,7 +1,6 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,10 +40,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.LocalIsDarkTheme
 import com.example.ui.theme.BorderDark
 import com.example.ui.theme.BorderLight
 import com.example.ui.theme.DarkNavBottom
+import com.example.ui.theme.LocalIsDarkTheme
 import com.example.ui.theme.PrimaryBlue
 import com.example.ui.theme.SlateGray
 import com.example.ui.theme.SurfaceLight
@@ -131,7 +130,6 @@ fun TaskEasyBottomBar(
           )
         }
 
-        // Prominent circular floating Add (+) button matching reference
         FloatingActionButton(
           onClick = onAddClick,
           modifier = Modifier
@@ -186,7 +184,8 @@ private fun BottomNavItem(
       text = label,
       fontSize = 11.sp,
       fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-      color = textColor
+      color = textColor,
+      maxLines = 1
     )
   }
 }

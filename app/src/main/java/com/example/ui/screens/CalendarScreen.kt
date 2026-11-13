@@ -3,7 +3,6 @@ package com.example.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -84,7 +83,7 @@ fun CalendarScreen(
   val monthFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
   val monthTitle = monthFormat.format(currentMonthCal.time)
 
-  val todaySdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+  val todaySdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
   val todayStr = todaySdf.format(Date())
 
   // Tasks for selected date
@@ -295,7 +294,7 @@ private fun CalendarMonthGrid(
   val firstDayOfWeek = cal.get(Calendar.DAY_OF_WEEK) - 1 // 0-based for Sunday
   val maxDaysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
 
-  val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+  val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
   val currentYear = cal.get(Calendar.YEAR)
   val currentMonth = cal.get(Calendar.MONTH)
 

@@ -116,23 +116,38 @@ class TaskRepository(private val taskDao: TaskDao) {
     taskDao.deleteAllTasks()
   }
 
+  suspend fun exportAllTasksToJson(): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    val tasks = taskDao.getAllTasksSync().map { it.toTaskItem() }
+    exportToJson(tasks)
+  }
+
   suspend fun exportToJson(tasks: List<TaskItem>): String {
     val root = JSONObject()
     root.put("version", 1)
+    root.put("app", "TaskEasy")
     root.put("exportedAt", System.currentTimeMillis())
+    root.put("taskCount", tasks.size)
     val array = JSONArray()
     tasks.forEach { array.put(it.toJson()) }
     root.put("tasks", array)
     return root.toString(2)
   }
 
-  suspend fun importFromJson(jsonString: String): Result<Int> {
-    return try {
-      val root = JSONObject(jsonString)
-      val tasksArray = if (root.has("tasks")) {
-        root.getJSONArray("tasks")
+  suspend fun importFromJson(jsonString: String): Result<Int> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    try {
+      val cleaned = jsonString.trim().removePrefix("\uFEFF")
+      if (cleaned.isEmpty()) {
+        return@withContext Result.failure(IllegalArgumentException("Backup data is empty"))
+      }
+
+      val tasksArray = if (cleaned.startsWith("[")) {
+        JSONArray(cleaned)
       } else {
-        JSONArray(jsonString)
+        val root = JSONObject(cleaned)
+        if (!root.has("tasks")) {
+          return@withContext Result.failure(IllegalArgumentException("Invalid backup format: missing 'tasks' list"))
+        }
+        root.getJSONArray("tasks")
       }
 
       val importedTasks = mutableListOf<TaskEntity>()
@@ -142,8 +157,8 @@ class TaskRepository(private val taskDao: TaskDao) {
         importedTasks.add(TaskEntity.fromTaskItem(taskItem))
       }
 
+      taskDao.deleteAllTasks()
       if (importedTasks.isNotEmpty()) {
-        taskDao.deleteAllTasks()
         taskDao.insertAll(importedTasks)
       }
       Result.success(importedTasks.size)
@@ -173,7 +188,6 @@ class TaskRepository(private val taskDao: TaskDao) {
   }
 
   suspend fun seedInitialDataIfNeeded() {
-    // No mock data - production deployment starts completely clean
-    purgeMockDataIfPresent()
+    // Production builds start clean without sample data or destructive title filtering
   }
 }

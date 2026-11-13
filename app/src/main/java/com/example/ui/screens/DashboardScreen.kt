@@ -24,7 +24,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.FormatListBulleted
+import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Schedule
@@ -53,6 +53,7 @@ import com.example.data.model.TaskStatus
 import com.example.ui.components.PriorityBadge
 import com.example.ui.components.TaskEasyLogo
 import com.example.ui.components.TaskStopwatchBadge
+import com.example.ui.components.formatDateDisplay
 import com.example.ui.theme.BorderDark
 import com.example.ui.theme.BorderLight
 import com.example.ui.theme.CompletedGreen
@@ -107,7 +108,7 @@ fun DashboardScreen(
   val totalTasks = tasks.size
   val completionPercentage = if (totalTasks > 0) ((completedCount.toFloat() / totalTasks.toFloat()) * 100).toInt() else 0
 
-  val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+  val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
   val todayTasks = tasks.filter { it.dueDate == todayStr || (it.dueDate != null && it.dueDate < todayStr && it.status != TaskStatus.COMPLETED) }
 
   val greeting = getGreetingMessage()
@@ -187,7 +188,7 @@ fun DashboardScreen(
           SummaryCard(
             countText = "$todoCount",
             labelText = "To Do",
-            icon = Icons.Default.FormatListBulleted,
+            icon = Icons.AutoMirrored.Filled.FormatListBulleted,
             iconBg = Color(0xFF0072F5),
             bgColor = if (isDark) TodoCardBgDark else TodoCardBgLight,
             borderColor = if (isDark) TodoCardBorderDark else TodoCardBorderLight,
@@ -387,8 +388,9 @@ private fun TodayTaskRow(
   modifier: Modifier = Modifier
 ) {
   val isDark = LocalIsDarkTheme.current
-  val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+  val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
   val isDueToday = task.dueDate == todayStr
+  val isOverdue = task.dueDate != null && task.dueDate < todayStr && task.status != TaskStatus.COMPLETED
   val isDueTomorrow = task.dueDate != null && task.dueDate > todayStr
 
   val (bgColor, borderColor, accentColor) = when (task.status) {
@@ -471,7 +473,11 @@ private fun TodayTaskRow(
 
         Row(verticalAlignment = Alignment.CenterVertically) {
           val dateColor = if (isDueTomorrow) PrimaryBlue else PriorityHigh
-          val dateLabel = if (isDueTomorrow) "Due tomorrow" else "Due today"
+          val dateLabel = when {
+            isOverdue -> "Overdue (${formatDateDisplay(task.dueDate!!)})"
+            isDueTomorrow -> "Due tomorrow"
+            else -> "Due today"
+          }
 
           Icon(
             imageVector = Icons.Default.CalendarToday,

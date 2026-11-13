@@ -12,7 +12,7 @@ interface TaskDao {
   @Query("SELECT * FROM tasks ORDER BY createdAt DESC")
   fun getAllTasks(): Flow<List<TaskEntity>>
 
-  @Query("SELECT * FROM tasks")
+  @Query("SELECT * FROM tasks ORDER BY createdAt DESC")
   suspend fun getAllTasksSync(): List<TaskEntity>
 
   @Query("SELECT * FROM tasks WHERE id = :id LIMIT 1")

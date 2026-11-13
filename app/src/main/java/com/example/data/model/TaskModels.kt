@@ -126,7 +126,7 @@ data class TaskItem(
         }
       }
 
-      val dueDateVal = if (obj.isNull("dueDate")) null else obj.optString("dueDate", null)
+      val dueDateVal = if (obj.isNull("dueDate") || !obj.has("dueDate")) null else obj.optString("dueDate").takeIf { it.isNotBlank() }
       val completedAtVal = if (obj.isNull("completedAt")) null else obj.optLong("completedAt")
       val startedAtVal = if (obj.isNull("startedAt")) null else obj.optLong("startedAt")
 
