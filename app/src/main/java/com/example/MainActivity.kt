@@ -84,6 +84,10 @@ fun TaskEasyApp(viewModel: TaskFlowViewModel = viewModel()) {
   val calendarSelectedDate by viewModel.calendarSelectedDate.collectAsStateWithLifecycle()
   val calendarMonth by viewModel.calendarMonth.collectAsStateWithLifecycle()
   val snackbarMessage by viewModel.snackbarMessage.collectAsStateWithLifecycle()
+  val categories by viewModel.categories.collectAsStateWithLifecycle()
+  val categoryTaskCounts = remember(tasks) {
+    tasks.groupingBy { it.category }.eachCount()
+  }
 
   val snackbarHostState = remember { SnackbarHostState() }
 
@@ -199,7 +203,12 @@ fun TaskEasyApp(viewModel: TaskFlowViewModel = viewModel()) {
                 SettingsScreen(
                   themeMode = themeMode,
                   taskCount = tasks.size,
+                  categories = categories,
+                  categoryTaskCounts = categoryTaskCounts,
                   onThemeChange = { mode -> viewModel.setThemeMode(mode) },
+                  onAddCategory = { name -> viewModel.addCategory(name) },
+                  onRenameCategory = { oldName, newName -> viewModel.renameCategory(oldName, newName) },
+                  onDeleteCategory = { name -> viewModel.deleteCategory(name) },
                   onExportPdfToStream = { stream -> viewModel.writePdfReport(stream) },
                   onClearAllData = { viewModel.clearAllData() },
                   onShowMessage = { msg -> viewModel.showToast(msg) },
@@ -211,6 +220,11 @@ fun TaskEasyApp(viewModel: TaskFlowViewModel = viewModel()) {
                 AddEditTaskScreen(
                   taskToEdit = editingTask,
                   presetDueDate = presetDueDate,
+                  categories = categories,
+                  categoryTaskCounts = categoryTaskCounts,
+                  onAddCategory = { name -> viewModel.addCategory(name) },
+                  onRenameCategory = { oldName, newName -> viewModel.renameCategory(oldName, newName) },
+                  onDeleteCategory = { name -> viewModel.deleteCategory(name) },
                   onSave = { title, desc, priority, category, dueDate, subtasks ->
                     viewModel.saveTask(title, desc, priority, category, dueDate, subtasks)
                   },
@@ -260,6 +274,7 @@ fun TaskEasyApp(viewModel: TaskFlowViewModel = viewModel()) {
       // Filter Bottom Sheet
       if (showFilterSheet) {
         FilterBottomSheet(
+          categories = categories,
           selectedPriority = priorityFilter,
           selectedCategory = categoryFilter,
           selectedDue = dueFilter,

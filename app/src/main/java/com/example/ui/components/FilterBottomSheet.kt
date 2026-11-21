@@ -51,6 +51,7 @@ import com.example.ui.viewmodel.SortOption
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun FilterBottomSheet(
+  categories: List<String>,
   selectedPriority: Priority?,
   selectedCategory: String?,
   selectedDue: DueFilter,
@@ -64,8 +65,6 @@ fun FilterBottomSheet(
 ) {
   val isDark = LocalIsDarkTheme.current
   val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-  val categories = listOf("Personal", "Work", "Family", "Shopping", "Others")
 
   ModalBottomSheet(
     onDismissRequest = onDismiss,

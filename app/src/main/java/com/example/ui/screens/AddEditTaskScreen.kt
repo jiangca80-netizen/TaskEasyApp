@@ -2,9 +2,11 @@ package com.example.ui.screens
 
 import android.app.DatePickerDialog
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,11 +31,7 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocalOffer
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Work
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -42,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -62,6 +61,9 @@ import androidx.compose.ui.unit.sp
 import com.example.data.model.Priority
 import com.example.data.model.Subtask
 import com.example.data.model.TaskItem
+import com.example.ui.components.AddOrEditCategoryDialog
+import com.example.ui.components.ManageCategoriesDialog
+import com.example.ui.components.categoryIconFor
 import com.example.ui.components.formatDateDisplay
 import com.example.ui.theme.BorderDark
 import com.example.ui.theme.BorderLight
@@ -81,11 +83,16 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun AddEditTaskScreen(
   taskToEdit: TaskItem?,
   presetDueDate: String?,
+  categories: List<String>,
+  categoryTaskCounts: Map<String, Int> = emptyMap(),
+  onAddCategory: (String) -> Result<String>,
+  onRenameCategory: (oldName: String, newName: String) -> Result<String>,
+  onDeleteCategory: (String) -> Result<String>,
   onSave: (title: String, desc: String, priority: Priority, category: String, dueDate: String?, subtasks: List<Subtask>) -> Unit,
   onCancel: () -> Unit,
   modifier: Modifier = Modifier
@@ -98,7 +105,9 @@ fun AddEditTaskScreen(
   var title by remember { mutableStateOf(taskToEdit?.title ?: "") }
   var description by remember { mutableStateOf(taskToEdit?.description ?: "") }
   var priority by remember { mutableStateOf(taskToEdit?.priority ?: Priority.MEDIUM) }
-  var category by remember { mutableStateOf(taskToEdit?.category ?: "Personal") }
+  var category by remember {
+    mutableStateOf(taskToEdit?.category ?: categories.firstOrNull() ?: "Personal")
+  }
   var dueDate by remember { mutableStateOf(taskToEdit?.dueDate ?: presetDueDate) }
 
   val subtasks = remember {
@@ -111,14 +120,13 @@ fun AddEditTaskScreen(
 
   var newSubtaskText by remember { mutableStateOf("") }
   var titleError by remember { mutableStateOf(false) }
+  var showAddCategoryDialog by remember { mutableStateOf(false) }
+  var showManageCategoriesDialog by remember { mutableStateOf(false) }
 
-  val categories = listOf(
-    Pair("Personal", Icons.Default.LocalOffer),
-    Pair("Work", Icons.Default.Work),
-    Pair("Family", Icons.Default.Home),
-    Pair("Shopping", Icons.Default.ShoppingCart),
-    Pair("Others", Icons.Default.GridView)
-  )
+  val displayCategories = remember(categories, category) {
+    if (categories.any { it.equals(category, ignoreCase = true) }) categories
+    else categories + category
+  }
 
   val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
 
@@ -364,21 +372,54 @@ fun AddEditTaskScreen(
       Spacer(modifier = Modifier.height(18.dp))
 
       // Category
-      Text(
-        text = "Category",
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 14.sp,
-        color = if (isDark) TextDarkPrimary else DarkNavyText
-      )
-      Spacer(modifier = Modifier.height(8.dp))
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Text(
+          text = "Category",
+          fontWeight = FontWeight.SemiBold,
+          fontSize = 14.sp,
+          color = if (isDark) TextDarkPrimary else DarkNavyText
+        )
+        TextButton(
+          onClick = { showManageCategoriesDialog = true },
+          modifier = Modifier.testTag("manage_categories_button")
+        ) {
+          Icon(
+            imageVector = Icons.Default.Edit,
+            contentDescription = null,
+            tint = PrimaryBlue,
+            modifier = Modifier.size(14.dp)
+          )
+          Spacer(modifier = Modifier.width(4.dp))
+          Text(
+            text = "Manage",
+            fontSize = 12.5.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = PrimaryBlue
+          )
+        }
+      }
+      Spacer(modifier = Modifier.height(4.dp))
       FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        categories.forEach { (cat, icon) ->
+        displayCategories.forEach { cat ->
+          val icon = categoryIconFor(cat)
           val selected = category.equals(cat, ignoreCase = true)
-          val bg = if (selected) Color(0xFFEDF5FF) else if (isDark) Color(0xFF1E2D47) else Color(0xFFF8FAFC)
-          val textColor = if (selected) PrimaryBlue else SlateGray
+          val bg = if (selected) {
+            if (isDark) Color(0xFF1A3358) else Color(0xFFEDF5FF)
+          } else {
+            if (isDark) Color(0xFF1E2D47) else Color(0xFFF8FAFC)
+          }
+          val textColor = if (selected) {
+            if (isDark) Color(0xFF93C5FD) else PrimaryBlue
+          } else {
+            if (isDark) Color(0xFFCBD5E1) else SlateGray
+          }
           val borderColor = if (selected) PrimaryBlue else if (isDark) BorderDark else BorderLight
 
           Box(
@@ -386,7 +427,10 @@ fun AddEditTaskScreen(
               .clip(RoundedCornerShape(12.dp))
               .background(bg)
               .border(1.dp, borderColor, RoundedCornerShape(12.dp))
-              .clickable { category = cat }
+              .combinedClickable(
+                onClick = { category = cat },
+                onLongClick = { showManageCategoriesDialog = true }
+              )
               .padding(horizontal = 12.dp, vertical = 8.dp)
           ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -404,6 +448,33 @@ fun AddEditTaskScreen(
                 color = textColor
               )
             }
+          }
+        }
+
+        // "+ Add" chip to create a custom category manually
+        Box(
+          modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (isDark) Color(0xFF162742) else Color(0xFFF0F7FF))
+            .border(1.dp, PrimaryBlue.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+            .clickable { showAddCategoryDialog = true }
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .testTag("add_category_chip")
+        ) {
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+              imageVector = Icons.Default.Add,
+              contentDescription = "Add category",
+              tint = PrimaryBlue,
+              modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+              text = "Add",
+              fontSize = 13.sp,
+              fontWeight = FontWeight.SemiBold,
+              color = PrimaryBlue
+            )
           }
         }
       }
@@ -587,5 +658,44 @@ fun AddEditTaskScreen(
 
       Spacer(modifier = Modifier.height(40.dp))
     }
+  }
+
+  if (showAddCategoryDialog) {
+    AddOrEditCategoryDialog(
+      initialName = null,
+      onConfirm = { newName ->
+        onAddCategory(newName).onSuccess { added ->
+          category = added
+        }
+      },
+      onDismiss = { showAddCategoryDialog = false }
+    )
+  }
+
+  if (showManageCategoriesDialog) {
+    ManageCategoriesDialog(
+      categories = categories,
+      categoryTaskCounts = categoryTaskCounts,
+      onAddCategory = { newName ->
+        onAddCategory(newName).onSuccess { added ->
+          category = added
+        }
+      },
+      onRenameCategory = { oldName, newName ->
+        onRenameCategory(oldName, newName).onSuccess { cleanNew ->
+          if (category.equals(oldName, ignoreCase = true)) {
+            category = cleanNew
+          }
+        }
+      },
+      onDeleteCategory = { target ->
+        onDeleteCategory(target).onSuccess { fallback ->
+          if (category.equals(target, ignoreCase = true)) {
+            category = fallback
+          }
+        }
+      },
+      onDismiss = { showManageCategoriesDialog = false }
+    )
   }
 }

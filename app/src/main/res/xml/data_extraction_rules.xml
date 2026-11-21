@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
     <cloud-backup>
-        <include domain="database" path="taskflow_database" />
+        <include domain="database" path="." />
         <include domain="sharedpref" path="taskflow_prefs.xml" />
     </cloud-backup>
     <device-transfer>
-        <include domain="database" path="taskflow_database" />
+        <include domain="database" path="." />
         <include domain="sharedpref" path="taskflow_prefs.xml" />
     </device-transfer>
 </data-extraction-rules>

@@ -9,6 +9,7 @@ import com.example.data.model.Priority
 import com.example.data.model.Subtask
 import com.example.data.model.TaskItem
 import com.example.data.model.TaskStatus
+import com.example.data.repository.CategoryStore
 import com.example.data.repository.TaskRepository
 import com.example.ui.theme.AppThemeMode
 import com.example.util.TaskPdfExporter
@@ -127,6 +128,9 @@ class TaskFlowViewModel(application: Application) : AndroidViewModel(application
 
   private val _snackbarMessage = MutableStateFlow<String?>(null)
   val snackbarMessage: StateFlow<String?> = _snackbarMessage.asStateFlow()
+
+  private val _categories = MutableStateFlow(CategoryStore.loadCategories(prefs))
+  val categories: StateFlow<List<String>> = _categories.asStateFlow()
 
   init {
     val database = TaskDatabase.getDatabase(application)
@@ -408,6 +412,55 @@ class TaskFlowViewModel(application: Application) : AndroidViewModel(application
   fun toggleTheme() {
     val nextMode = if (_themeMode.value == AppThemeMode.DARK) AppThemeMode.LIGHT else AppThemeMode.DARK
     setThemeMode(nextMode)
+  }
+
+  // --- Categories ---
+
+  fun addCategory(rawName: String): Result<String> {
+    val result = CategoryStore.addCategory(prefs, _categories.value, rawName)
+    return result.map { (updated, addedName) ->
+      _categories.value = updated
+      showToast("Added category \"$addedName\"")
+      addedName
+    }
+  }
+
+  fun renameCategory(oldName: String, rawNewName: String): Result<String> {
+    val result = CategoryStore.renameCategory(prefs, _categories.value, oldName, rawNewName)
+    return result.map { (updated, cleanNewName) ->
+      _categories.value = updated
+      if (_categoryFilter.value?.equals(oldName, ignoreCase = true) == true) {
+        _categoryFilter.value = cleanNewName
+      }
+      val editing = _editingTask.value
+      if (editing != null && editing.category.equals(oldName, ignoreCase = true)) {
+        _editingTask.value = editing.copy(category = cleanNewName)
+      }
+      viewModelScope.launch {
+        repository.reassignTasksCategory(oldName, cleanNewName)
+      }
+      showToast("Renamed \"$oldName\" to \"$cleanNewName\"")
+      cleanNewName
+    }
+  }
+
+  fun deleteCategory(targetName: String): Result<String> {
+    val result = CategoryStore.deleteCategory(prefs, _categories.value, targetName)
+    return result.map { (updated, fallback) ->
+      _categories.value = updated
+      if (_categoryFilter.value?.equals(targetName, ignoreCase = true) == true) {
+        _categoryFilter.value = null
+      }
+      val editing = _editingTask.value
+      if (editing != null && editing.category.equals(targetName, ignoreCase = true)) {
+        _editingTask.value = editing.copy(category = fallback)
+      }
+      viewModelScope.launch {
+        repository.reassignTasksCategory(targetName, fallback)
+      }
+      showToast("Deleted category \"$targetName\"")
+      fallback
+    }
   }
 
   // --- PDF Export ---

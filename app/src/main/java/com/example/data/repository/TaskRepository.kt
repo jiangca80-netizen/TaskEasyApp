@@ -116,6 +116,10 @@ class TaskRepository(private val taskDao: TaskDao) {
     taskDao.deleteAllTasks()
   }
 
+  suspend fun reassignTasksCategory(oldCategory: String, newCategory: String) {
+    taskDao.updateTasksCategory(oldCategory, newCategory, System.currentTimeMillis())
+  }
+
   suspend fun exportAllTasksToJson(): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
     val tasks = taskDao.getAllTasksSync().map { it.toTaskItem() }
     exportToJson(tasks)

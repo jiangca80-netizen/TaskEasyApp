@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
@@ -66,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.example.BuildConfig
+import com.example.ui.components.ManageCategoriesDialog
 import com.example.ui.theme.AppThemeMode
 import com.example.ui.theme.BorderDark
 import com.example.ui.theme.BorderLight
@@ -92,7 +94,12 @@ import java.util.Locale
 fun SettingsScreen(
   themeMode: AppThemeMode,
   taskCount: Int = 0,
+  categories: List<String> = emptyList(),
+  categoryTaskCounts: Map<String, Int> = emptyMap(),
   onThemeChange: (AppThemeMode) -> Unit,
+  onAddCategory: (String) -> Result<String> = { Result.failure(UnsupportedOperationException()) },
+  onRenameCategory: (String, String) -> Result<String> = { _, _ -> Result.failure(UnsupportedOperationException()) },
+  onDeleteCategory: (String) -> Result<String> = { Result.failure(UnsupportedOperationException()) },
   onExportPdfToStream: suspend (OutputStream) -> Unit,
   onClearAllData: () -> Unit,
   onShowMessage: (String) -> Unit = {},
@@ -106,6 +113,7 @@ fun SettingsScreen(
   val isDark = LocalIsDarkTheme.current
 
   var showThemeDialog by remember { mutableStateOf(false) }
+  var showManageCategoriesDialog by remember { mutableStateOf(false) }
   var showExportPdfDialog by remember { mutableStateOf(false) }
   var exportStatusError by remember { mutableStateOf<String?>(null) }
   var isExportingPdf by remember { mutableStateOf(false) }
@@ -201,7 +209,20 @@ fun SettingsScreen(
         )
       }
 
-      // 2. Data Management Group (Export in PDF + Clear All Data ONLY)
+      // 2. Task Organization (Categories)
+      SettingsGroupCard(title = "Task Organization") {
+        SettingsRowItem(
+          icon = Icons.AutoMirrored.Filled.Label,
+          iconTint = PrimaryBlue,
+          title = "Manage Categories",
+          subtitle = "Add, rename, or delete task categories",
+          value = "${categories.size}",
+          onClick = { showManageCategoriesDialog = true },
+          testTag = "settings_manage_categories_row"
+        )
+      }
+
+      // 3. Data Management Group (Export in PDF + Clear All Data ONLY)
       SettingsGroupCard(title = "Data Management") {
         SettingsRowItem(
           icon = Icons.Default.PictureAsPdf,
@@ -489,6 +510,17 @@ fun SettingsScreen(
           Text("Understood")
         }
       }
+    )
+  }
+
+  if (showManageCategoriesDialog) {
+    ManageCategoriesDialog(
+      categories = categories,
+      categoryTaskCounts = categoryTaskCounts,
+      onAddCategory = onAddCategory,
+      onRenameCategory = onRenameCategory,
+      onDeleteCategory = onDeleteCategory,
+      onDismiss = { showManageCategoriesDialog = false }
     )
   }
 }

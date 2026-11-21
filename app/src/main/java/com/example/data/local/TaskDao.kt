@@ -33,6 +33,9 @@ interface TaskDao {
   @Query("DELETE FROM tasks")
   suspend fun deleteAllTasks()
 
+  @Query("UPDATE tasks SET category = :newCategory, updatedAt = :updatedAt WHERE LOWER(category) = LOWER(:oldCategory)")
+  suspend fun updateTasksCategory(oldCategory: String, newCategory: String, updatedAt: Long)
+
   @Query("SELECT COUNT(*) FROM tasks")
   suspend fun getTaskCount(): Int
 }

@@ -185,6 +185,112 @@ class ExampleRobolectricTest {
     assertEquals("Completed Tasks (1)", report.sections[1].heading)
     org.junit.Assert.assertTrue(report.sections[0].entries[0].bodyLines.any { it.contains("[✓] First subtask") })
   }
+
+  @Test
+  fun `persistent task database retains all user tasks across app restart`() = kotlinx.coroutines.runBlocking {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val dbName = "taskflow_persistence_test.db"
+    context.deleteDatabase(dbName)
+
+    val dbFirstSession = androidx.room.Room.databaseBuilder(
+      context,
+      com.example.data.local.TaskDatabase::class.java,
+      dbName
+    )
+      .addMigrations(*com.example.data.local.TaskDatabase.ALL_MIGRATIONS)
+      .allowMainThreadQueries()
+      .build()
+
+    val savedTask = com.example.data.model.TaskItem(
+      id = "persist-1",
+      title = "Buy groceries",
+      description = "Verify common titles and data survive restarts",
+      status = com.example.data.model.TaskStatus.IN_PROGRESS,
+      priority = com.example.data.model.Priority.HIGH,
+      category = "Personal",
+      dueDate = "2026-12-15",
+      elapsedSeconds = 95L
+    )
+    dbFirstSession.taskDao().insertTask(com.example.data.local.TaskEntity.fromTaskItem(savedTask))
+    dbFirstSession.close()
+
+    val dbAfterUpdate = androidx.room.Room.databaseBuilder(
+      context,
+      com.example.data.local.TaskDatabase::class.java,
+      dbName
+    )
+      .addMigrations(*com.example.data.local.TaskDatabase.ALL_MIGRATIONS)
+      .allowMainThreadQueries()
+      .build()
+
+    val loaded = dbAfterUpdate.taskDao().getTaskById("persist-1")?.toTaskItem()
+    dbAfterUpdate.close()
+    context.deleteDatabase(dbName)
+
+    org.junit.Assert.assertNotNull(loaded)
+    assertEquals("Buy groceries", loaded!!.title)
+    assertEquals(95L, loaded.elapsedSeconds)
+    assertEquals(com.example.data.model.TaskStatus.IN_PROGRESS, loaded.status)
+  }
+
+  @Test
+  fun `categoryStore supports add rename delete and task reassignment`() = kotlinx.coroutines.runBlocking {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val prefs = context.getSharedPreferences("test_category_prefs", Context.MODE_PRIVATE)
+    prefs.edit().clear().commit()
+
+    var categories = com.example.data.repository.CategoryStore.loadCategories(prefs)
+    assertEquals(5, categories.size)
+
+    // Add manual category and reject duplicate
+    val addResult = com.example.data.repository.CategoryStore.addCategory(prefs, categories, "  Study  ")
+    org.junit.Assert.assertTrue(addResult.isSuccess)
+    categories = addResult.getOrThrow().first
+    assertEquals("Study", categories.last())
+
+    val dupResult = com.example.data.repository.CategoryStore.addCategory(prefs, categories, "study")
+    org.junit.Assert.assertTrue(dupResult.isFailure)
+
+    // Rename category
+    val renameResult = com.example.data.repository.CategoryStore.renameCategory(prefs, categories, "Study", "Learning")
+    org.junit.Assert.assertTrue(renameResult.isSuccess)
+    categories = renameResult.getOrThrow().first
+    org.junit.Assert.assertTrue(categories.contains("Learning"))
+    org.junit.Assert.assertFalse(categories.contains("Study"))
+
+    // Verify persistence reload
+    val reloaded = com.example.data.repository.CategoryStore.loadCategories(prefs)
+    assertEquals(categories, reloaded)
+
+    // Delete category and verify task reassignment in Room
+    val db = androidx.room.Room.inMemoryDatabaseBuilder(
+      context,
+      com.example.data.local.TaskDatabase::class.java
+    ).allowMainThreadQueries().build()
+    try {
+      val repo = com.example.data.repository.TaskRepository(db.taskDao())
+      repo.insertTask(
+        com.example.data.model.TaskItem(
+          id = "cat-task-1",
+          title = "Read Kotlin Guide",
+          category = "Study"
+        )
+      )
+      repo.reassignTasksCategory("Study", "Learning")
+      assertEquals("Learning", db.taskDao().getTaskById("cat-task-1")!!.category)
+
+      val deleteResult = com.example.data.repository.CategoryStore.deleteCategory(prefs, categories, "Learning")
+      org.junit.Assert.assertTrue(deleteResult.isSuccess)
+      val (afterDelete, fallback) = deleteResult.getOrThrow()
+      assertEquals("Others", fallback)
+      repo.reassignTasksCategory("Learning", fallback)
+      assertEquals("Others", db.taskDao().getTaskById("cat-task-1")!!.category)
+      org.junit.Assert.assertFalse(afterDelete.contains("Learning"))
+    } finally {
+      db.close()
+      prefs.edit().clear().commit()
+    }
+  }
 }
 
 
